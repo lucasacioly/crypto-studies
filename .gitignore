@@ -1,0 +1,67 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+dist/
+build/
+out-tsc/
+tmp/
+.angular/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+ENV/
+venv/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+.env.local
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+junit*
+coverage.xml
+
+# Misc
+*.log
+*.bak
+npm-debug.log*
+
+dist/
+# Diretórios e arquivos grandes/locais
+webclient/
+bitcoin-31.0-x86_64-linux-gnu.tar.gz
+hackathon-corecraft-descrição-turma-B.pdf

@@ -1,0 +1,64 @@
+<div class="bg-white rounded-lg shadow-md p-6">
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">Mempool Intelligence</h2>
+
+  <div *ngIf="data" class="space-y-6">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 gap-4">
+      <div class="bg-blue-50 p-4 rounded-md">
+        <p class="text-sm text-gray-600 font-medium">Total Transactions</p>
+        <p class="text-2xl font-bold text-blue-600">{{ data.tx_count | number }}</p>
+      </div>
+      <div class="bg-purple-50 p-4 rounded-md">
+        <p class="text-sm text-gray-600 font-medium">Total Size (vB)</p>
+        <p class="text-2xl font-bold text-purple-600">{{ data.total_vsize | number }}</p>
+      </div>
+    </div>
+
+    <!-- Fee Rates -->
+    <div class="bg-gray-50 p-4 rounded-md space-y-3">
+      <p class="text-sm font-medium text-gray-700">Fee Rates (sat/vB)</p>
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Average:</span>
+          <span class="font-semibold text-gray-900">{{ data.avg_fee_rate }} sat/vB</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Min:</span>
+          <span class="font-semibold text-green-600">{{ data.min_fee_rate }} sat/vB</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Max:</span>
+          <span class="font-semibold text-red-600">{{ data.max_fee_rate }} sat/vB</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fee Distribution -->
+    <div class="bg-gray-50 p-4 rounded-md">
+      <p class="text-sm font-medium text-gray-700 mb-4">Fee Distribution</p>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+            <span class="text-sm text-gray-600">Low Fee</span>
+          </div>
+          <span class="font-semibold text-gray-900">{{ data.fee_distribution.low }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+            <span class="text-sm text-gray-600">Medium Fee</span>
+          </div>
+          <span class="font-semibold text-gray-900">{{ data.fee_distribution.medium }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+            <span class="text-sm text-gray-600">High Fee</span>
+          </div>
+          <span class="font-semibold text-gray-900">{{ data.fee_distribution.high }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

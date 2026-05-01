@@ -1,0 +1,50 @@
+<div class="bg-white rounded-lg shadow-md p-6">
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">Node Sync Status</h2>
+
+  <div *ngIf="data" class="space-y-6">
+    <!-- Status Indicator -->
+    <div [ngClass]="getBgColor()" class="p-4 rounded-md border-l-4" [ngClass]="{'border-l-green-600': getLagStatus() === 'synced', 'border-l-yellow-600': getLagStatus() === 'syncing', 'border-l-red-600': getLagStatus() === 'lagging'}">
+      <div class="flex items-center gap-2">
+        <span [ngClass]="getLagColor()" class="text-2xl">{{ getStatusIcon() }}</span>
+        <div>
+          <p class="text-sm font-medium text-gray-700">Status</p>
+          <p [ngClass]="getLagColor()" class="font-bold capitalize">
+            {{ getLagStatus() }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block Count Stats -->
+    <div class="grid grid-cols-2 gap-4">
+      <div class="bg-blue-50 p-4 rounded-md">
+        <p class="text-sm text-gray-600 font-medium">Blocks</p>
+        <p class="text-2xl font-bold text-blue-600">{{ data.blocks | number }}</p>
+      </div>
+      <div class="bg-purple-50 p-4 rounded-md">
+        <p class="text-sm text-gray-600 font-medium">Headers</p>
+        <p class="text-2xl font-bold text-purple-600">{{ data.headers | number }}</p>
+      </div>
+    </div>
+
+    <!-- Lag Indicator -->
+    <div class="bg-gray-50 p-4 rounded-md">
+      <p class="text-sm font-medium text-gray-700 mb-3">Sync Lag</p>
+      <div class="flex items-baseline gap-2">
+        <p [ngClass]="{'text-green-600': data.lag === 0, 'text-yellow-600': data.lag > 0 && data.lag <= 5, 'text-red-600': data.lag > 5}" class="text-3xl font-bold">
+          {{ data.lag }}
+        </p>
+        <p class="text-gray-600">blocks behind</p>
+      </div>
+      <p class="text-xs text-gray-500 mt-2">
+        Difference between headers received and blocks synced
+      </p>
+    </div>
+
+    <!-- Warning (if lagging) -->
+    <div *ngIf="isLagging()" class="bg-red-100 border border-red-400 text-red-700 p-4 rounded-md">
+      <p class="font-semibold">⚠ Sync Lag Detected</p>
+      <p class="text-sm mt-1">Your node is {{ data.lag }} blocks behind. It's still synchronizing.</p>
+    </div>
+  </div>
+</div>
