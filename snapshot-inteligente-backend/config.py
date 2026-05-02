@@ -21,6 +21,14 @@ class Config(BaseSettings):
     API_PORT: int = 8000
     FRONTEND_URL: str = "http://localhost:4200"
     
+    # ZMQ Event Streaming (Task 2)
+    ZMQ_HOST: str = "localhost"
+    ZMQ_PORT: int = 28332
+    
+    # Event Buffer Capacity
+    EVENT_BUFFER_BLOCKS: int = 50
+    EVENT_BUFFER_TRANSACTIONS: int = 500
+    
     # Environment
     DEBUG: bool = False
     
