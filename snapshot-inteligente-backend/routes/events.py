@@ -239,7 +239,7 @@ async def get_state_comparison(
         503 Service Unavailable: RPC or ZMQ unavailable
     """
     try:
-        logger.info("GET /api/events/state-comparison")
+        logger.info(f"GET /api/events/state-comparison")
         
         # Get latest block from buffer
         latest_buffer_block = await event_buffer.get_latest_block()
@@ -253,7 +253,7 @@ async def get_state_comparison(
         # Get latest block from RPC (for comparison)
         from dependencies import bitcoin_service
         try:
-            blockchain_lag = await bitcoin_service.get_blockchain_lag()
+            blockchain_lag = bitcoin_service.get_blockchain_lag()
             
             # For now, we'll compare hashes from buffer vs RPC
             # This is a placeholder - in production you'd fetch the actual block
