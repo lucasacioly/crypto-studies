@@ -26,30 +26,33 @@ snapshot-inteligente/
 ├── backend/
 │   ├── app.py                       # FastAPI application entry point
 │   ├── config.py                    # Configuration management
+│   ├── dependencies.py              # Dependency injection setup
 │   ├── requirements.txt             # Python dependencies
 │   ├── layers/
 │   │   ├── __init__.py
-│   │   ├── rpc_client.py           # Bitcoin RPC communication
-│   │   ├── cache_layer.py          # Time-based caching decorator
-│   │   └── bitcoin_service.py      # Business logic & interpretation
+│   │   ├── rpc_client.py           # Bitcoin RPC communication (Task 1)
+│   │   ├── cache_layer.py          # Time-based caching decorator (Task 1)
+│   │   ├── bitcoin_service.py      # Business logic & interpretation (Task 1)
+│   │   └── event_buffer.py         # Event streaming & ZMQ listener (Task 2)
 │   ├── routes/
 │   │   ├── __init__.py
-│   │   ├── mempool.py              # Mempool summary endpoints
-│   │   ├── blockchain.py           # Blockchain sync endpoints
-│   │   └── health.py               # Health check endpoint
+│   │   ├── health.py               # Health check endpoint
+│   │   ├── mempool.py              # Mempool summary endpoints (Task 1)
+│   │   ├── blockchain.py           # Blockchain sync endpoints (Task 1)
+│   │   └── events.py               # Event streaming endpoints (Task 2)
 │   ├── models/
 │   │   ├── __init__.py
-│   │   ├── requests.py             # Input validation schemas
-│   │   └── responses.py            # Output response schemas
+│   │   ├── errors.py               # Custom exception classes
+│   │   └── responses.py            # Pydantic response schemas
 │   ├── utils/
 │   │   ├── __init__.py
-│   │   ├── errors.py               # Custom exception classes
 │   │   └── logger.py               # Logging configuration
 │   ├── tests/
 │   │   ├── __init__.py
 │   │   ├── test_rpc_client.py
 │   │   ├── test_cache_layer.py
-│   │   └── test_bitcoin_service.py
+│   │   ├── test_bitcoin_service.py
+│   │   └── test_event_buffer.py     # Tests for Task 2
 │   └── .env.example                # Environment variables template
 │
 ├── frontend/
@@ -58,27 +61,41 @@ snapshot-inteligente/
 │   │   │   ├── components/
 │   │   │   │   ├── dashboard.component.ts
 │   │   │   │   ├── dashboard.component.html
-│   │   │   │   ├── dashboard.component.css
+│   │   │   │   ├── dashboard.component.scss
 │   │   │   │   ├── mempool-card.component.ts
 │   │   │   │   ├── mempool-card.component.html
+│   │   │   │   ├── mempool-card.component.scss
 │   │   │   │   ├── blockchain-card.component.ts
-│   │   │   │   └── blockchain-card.component.html
+│   │   │   │   ├── blockchain-card.component.html
+│   │   │   │   ├── blockchain-card.component.scss
+│   │   │   │   ├── event-activity-card.component.ts      # Task 2
+│   │   │   │   ├── event-activity-card.component.html
+│   │   │   │   └── event-activity-card.component.scss
 │   │   │   ├── services/
 │   │   │   │   ├── bitcoin-api.service.ts
+│   │   │   │   ├── bitcoin-api.service.spec.ts
 │   │   │   │   └── auto-refresh.service.ts
-│   │   │   └── models/
-│   │   │       ├── mempool.model.ts
-│   │   │       └── blockchain.model.ts
-│   │   └── app.module.ts
+│   │   │   ├── models/
+│   │   │   │   ├── mempool.model.ts
+│   │   │   │   ├── blockchain.model.ts
+│   │   │   │   └── events.model.ts                        # Task 2
+│   │   │   └── app.module.ts
+│   │   └── environments/
+│   │       ├── environment.ts
+│   │       └── environment.prod.ts
 │   ├── angular.json
 │   ├── package.json
-│   └── tailwind.config.js
+│   ├── tailwind.config.js
+│   └── Dockerfile
 │
 ├── docs/
 │   └── superpowers/
-│       └── specs/
-│           └── 2026-05-01-snapshot-inteligente-design.md (this file)
+│       ├── specs/
+│       │   └── 2026-05-01-snapshot-inteligente-design.md (this file)
+│       └── plans/
+│           └── 2026-05-01-snapshot-inteligente-implementation.md
 │
+├── docker-compose.yml
 └── README.md
 ```
 
@@ -856,14 +873,372 @@ User can click "Retry"
 
 ---
 
-## **12. Future Extensibility (Task 2 Foundation)**
+## **12. Task 2: Real-Time Event Streaming via ZMQ**
 
-This design intentionally creates clear boundaries for Task 2 additions:
+### **12.1 Overview**
 
-- **ZMQ Event Listener:** New layer parallel to RPC Client
-- **Event Queue:** Store recent block/transaction observations
-- **State Comparison:** Add `/api/events/state-comparison` endpoint
-- **Frontend Enhancement:** Add event activity cards
-- **Deployment:** Add external access (VPS/tunnel)
+Task 2 extends the snapshot system with **real-time Bitcoin event streaming** using ZeroMQ (ZMQ). Instead of polling RPC every 15 seconds, the backend now listens to Bitcoin Core's ZMQ event stream for immediate block and transaction notifications.
 
-The layered structure allows these additions without major refactoring.
+**Key Features:**
+- **ZMQ Event Listener:** Async listener for hashblock and rawtx topics
+- **Circular Buffers:** Keep last 50 blocks and 500 transactions in memory
+- **Event REST Endpoints:** Serve buffered events to frontend
+- **State Comparison:** Detect blockchain divergence/reorg scenarios
+- **Thread-Safe Access:** AsyncIO locks for concurrent access
+
+### **12.2 Architecture**
+
+#### **New Layer: Event Buffer (`layers/event_buffer.py`)**
+
+Manages in-memory circular buffers for Bitcoin events:
+
+```python
+@dataclass
+class BlockEvent:
+    """Represents a Bitcoin block event."""
+    block_hash: str
+    block_height: int
+    timestamp: str
+    received_at: float  # Unix timestamp
+    
+@dataclass
+class TransactionEvent:
+    """Represents a Bitcoin transaction event."""
+    txid: str
+    timestamp: str
+    received_at: float
+
+class EventBuffer:
+    """
+    Manages circular buffers for block and transaction events.
+    Thread-safe using asyncio.Lock.
+    """
+    def __init__(self, block_capacity: int = 50, tx_capacity: int = 500):
+        self.block_capacity = block_capacity
+        self.tx_capacity = tx_capacity
+        self.blocks: Deque[BlockEvent] = deque(maxlen=block_capacity)
+        self.transactions: Deque[TransactionEvent] = deque(maxlen=tx_capacity)
+        self.lock = asyncio.Lock()
+    
+    async def add_block(self, block_event: BlockEvent) -> None:
+        """Add block to circular buffer (thread-safe)."""
+        async with self.lock:
+            self.blocks.append(block_event)
+    
+    async def add_transaction(self, tx_event: TransactionEvent) -> None:
+        """Add transaction to circular buffer (thread-safe)."""
+        async with self.lock:
+            self.transactions.append(tx_event)
+    
+    async def get_recent_blocks(self, limit: int = None) -> List[BlockEvent]:
+        """Get recent blocks from buffer."""
+        async with self.lock:
+            if limit:
+                return list(self.blocks)[-limit:]
+            return list(self.blocks)
+    
+    async def get_recent_transactions(self, limit: int = None) -> List[TransactionEvent]:
+        """Get recent transactions from buffer."""
+        async with self.lock:
+            if limit:
+                return list(self.transactions)[-limit:]
+            return list(self.transactions)
+```
+
+#### **ZMQ Listener (`layers/event_buffer.py` - ZMQListener class)**
+
+Asynchronous listener for Bitcoin Core ZMQ events:
+
+```python
+class ZMQListener:
+    """
+    Listens to Bitcoin Core ZMQ events (hashblock, rawtx).
+    Pushes events into EventBuffer.
+    """
+    def __init__(self, event_buffer: EventBuffer, zmq_host: str = "localhost", zmq_port: int = 28332):
+        self.event_buffer = event_buffer
+        self.zmq_host = zmq_host
+        self.zmq_port = zmq_port
+        self.running = False
+    
+    async def start(self) -> None:
+        """Start listening for ZMQ events."""
+        # Use AsyncIO + ZMQ to listen for:
+        # - tcp://host:port with topic "hashblock"
+        # - tcp://host:port with topic "rawtx"
+        # Parse events and push to event_buffer
+        
+    async def stop(self) -> None:
+        """Stop the listener."""
+```
+
+### **12.3 New REST Endpoints**
+
+**File: `routes/events.py`**
+
+```python
+@router.get("/api/events/blocks", response_model=List[BlockEventResponse])
+async def get_recent_blocks(
+    limit: int = Query(10, ge=1, le=50),
+    event_buffer: EventBuffer = Depends(get_event_buffer)
+):
+    """Get recent block events from buffer."""
+    
+@router.get("/api/events/transactions", response_model=List[TransactionEventResponse])
+async def get_recent_transactions(
+    limit: int = Query(20, ge=1, le=100),
+    event_buffer: EventBuffer = Depends(get_event_buffer)
+):
+    """Get recent transaction events from buffer."""
+    
+@router.get("/api/events/state-comparison")
+async def get_state_comparison(
+    event_buffer: EventBuffer = Depends(get_event_buffer),
+    rpc: RPCClient = Depends(get_rpc_client)
+):
+    """
+    Compare buffered state with live RPC.
+    Detect blockchain divergence/reorg.
+    
+    Returns:
+    {
+        "divergence_detected": false,
+        "latest_block_from_buffer": {...},
+        "latest_block_from_rpc": {...},
+        "reorg_depth": 0
+    }
+    """
+```
+
+### **12.4 Integration in `app.py`**
+
+```python
+# Initialize EventBuffer
+event_buffer = EventBuffer(block_capacity=50, tx_capacity=500)
+zmq_listener = ZMQListener(event_buffer, zmq_host="localhost", zmq_port=28332)
+
+@app.on_event("startup")
+async def startup_event():
+    """Start ZMQ listener on app startup."""
+    asyncio.create_task(zmq_listener.start())
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stop ZMQ listener on app shutdown."""
+    await zmq_listener.stop()
+```
+
+### **12.5 Frontend Enhancement**
+
+New components:
+- **EventActivityCardComponent:** Shows recent block/transaction activity
+- **BlockReorgIndicator:** Detects and visualizes blockchain divergence
+- **EventStreamMonitor:** Real-time event counter/indicator
+
+### **12.6 Configuration**
+
+**New `.env` variables:**
+```
+ZMQ_HOST=localhost
+ZMQ_PORT=28332
+EVENT_BUFFER_BLOCKS=50
+EVENT_BUFFER_TRANSACTIONS=500
+```
+
+**Bitcoin Core configuration (bitcoin.conf):**
+```
+zmqpubhashblock=tcp://127.0.0.1:28332
+zmqpubrawtx=tcp://127.0.0.1:28332
+```
+
+### **12.7 Task 2 API Specification**
+
+#### **Endpoint: GET /api/events/blocks**
+
+Retrieve recent block events from the circular buffer.
+
+**Query Parameters:**
+- `limit` (int, optional): Number of blocks to return (1-50, default: 10)
+
+**Request:**
+```
+GET /api/events/blocks?limit=10
+```
+
+**Response (200 OK):**
+```json
+[
+  {
+    "block_hash": "00000abc123def456...",
+    "block_height": 572061,
+    "timestamp": "2026-05-01T14:30:00Z",
+    "received_at": 1746086400.123
+  },
+  {
+    "block_hash": "00000def456abc789...",
+    "block_height": 572060,
+    "timestamp": "2026-05-01T14:29:30Z",
+    "received_at": 1746086370.456
+  }
+]
+```
+
+**Error Responses:**
+- `503 Service Unavailable`: ZMQ listener not connected
+
+---
+
+#### **Endpoint: GET /api/events/transactions**
+
+Retrieve recent transaction events from the circular buffer.
+
+**Query Parameters:**
+- `limit` (int, optional): Number of transactions to return (1-100, default: 20)
+- `fee_category` (str, optional): Filter by "low", "medium", or "high"
+
+**Request:**
+```
+GET /api/events/transactions?limit=20&fee_category=high
+```
+
+**Response (200 OK):**
+```json
+[
+  {
+    "txid": "abc123def456...",
+    "timestamp": "2026-05-01T14:30:15Z",
+    "received_at": 1746086415.789,
+    "size_vbytes": 152,
+    "fee_rate_sat_vb": 75.5
+  },
+  {
+    "txid": "def456abc789...",
+    "timestamp": "2026-05-01T14:30:10Z",
+    "received_at": 1746086410.234,
+    "size_vbytes": 225,
+    "fee_rate_sat_vb": 82.3
+  }
+]
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid fee_category
+- `503 Service Unavailable`: ZMQ listener not connected
+
+---
+
+#### **Endpoint: GET /api/events/state-comparison**
+
+Compare the buffer's latest block state with live RPC to detect blockchain divergence/reorg.
+
+**Request:**
+```
+GET /api/events/state-comparison
+```
+
+**Response (200 OK - No Divergence):**
+```json
+{
+  "status": "synced",
+  "divergence_detected": false,
+  "buffer_latest_block": {
+    "hash": "00000abc123...",
+    "height": 572061,
+    "received_at": 1746086400.123
+  },
+  "rpc_latest_block": {
+    "hash": "00000abc123...",
+    "height": 572061,
+    "timestamp": "2026-05-01T14:30:00Z"
+  },
+  "reorg_depth": 0,
+  "comparison_timestamp": "2026-05-01T14:30:30Z"
+}
+```
+
+**Response (200 OK - Divergence Detected):**
+```json
+{
+  "status": "divergence",
+  "divergence_detected": true,
+  "buffer_latest_block": {
+    "hash": "00000abc123...",
+    "height": 572061,
+    "received_at": 1746086400.123
+  },
+  "rpc_latest_block": {
+    "hash": "00000xyz789...",
+    "height": 572061,
+    "timestamp": "2026-05-01T14:30:00Z"
+  },
+  "reorg_depth": 1,
+  "warning": "Blockchain reorg detected at height 572061",
+  "comparison_timestamp": "2026-05-01T14:30:30Z"
+}
+```
+
+**Error Responses:**
+- `503 Service Unavailable`: RPC or ZMQ unavailable
+
+---
+
+#### **Endpoint: GET /api/events/stats** (Task 2 Enhancement)
+
+Get event buffer statistics and connection status.
+
+**Request:**
+```
+GET /api/events/stats
+```
+
+**Response (200 OK):**
+```json
+{
+  "zmq_listener_status": "connected",
+  "buffer_blocks_count": 42,
+  "buffer_blocks_capacity": 50,
+  "buffer_transactions_count": 385,
+  "buffer_transactions_capacity": 500,
+  "last_block_received": "2026-05-01T14:30:00Z",
+  "last_transaction_received": "2026-05-01T14:30:28Z",
+  "uptime_seconds": 3600,
+  "events_received": {
+    "blocks": 42,
+    "transactions": 385
+  }
+}
+```
+
+---
+
+### **12.7 Success Criteria for Task 2**
+
+✅ ZMQ listener streams block/transaction events in real-time  
+✅ EventBuffer maintains circular buffers (50 blocks, 500 txs)  
+✅ `/api/events/blocks` and `/api/events/transactions` endpoints work  
+✅ State comparison detects blockchain reorg scenarios  
+✅ `/api/events/state-comparison` endpoint returns correct divergence status  
+✅ Frontend displays event activity without manual refresh  
+✅ All events persisted in memory only (no database)  
+✅ Thread-safe access via asyncio.Lock  
+✅ Event stats endpoint provides buffer status  
+
+---
+
+## **13. Deployment Roadmap**
+
+### **Phase 1: Backend Complete (Task 1 + 2)**
+- Docker container with FastAPI + ZMQ listener
+- Health check includes ZMQ status
+- Environment variables for all config
+
+### **Phase 2: Frontend Complete**
+- Angular dashboard with event cards
+- Auto-refresh every 15s (RPC polling)
+- Real-time event activity (ZMQ-pushed data)
+
+### **Phase 3: External Deployment (Task 3)**
+- VPS/Cloud hosting (AWS, Linode, etc)
+- Reverse proxy (nginx) for HTTPS
+- Firewall rules for RPC/ZMQ access
+- CI/CD pipeline (GitHub Actions)

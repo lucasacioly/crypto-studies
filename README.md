@@ -59,13 +59,21 @@ Visit: http://localhost:4200
 
 ## Features
 
+### Task 1: Mempool & Blockchain Analysis (Complete)
 ✅ Real-time mempool analysis with fee classification  
 ✅ Blockchain sync status monitoring  
 ✅ Auto-refresh dashboard every 15 seconds  
 ✅ Fee distribution visualization  
 ✅ Configurable thresholds via environment variables  
 ✅ Health check endpoint  
-✅ Full API documentation with Swagger  
+✅ Full API documentation with Swagger
+
+### Task 2: Real-Time Event Streaming (In Progress)
+🔄 Bitcoin ZMQ event listener (hashblock, rawtx)  
+🔄 Circular buffers for blocks & transactions  
+🔄 REST endpoints for event history  
+🔄 Blockchain state comparison (reorg detection)  
+🔄 Frontend event activity visualization  
 
 ## Architecture
 
@@ -76,9 +84,15 @@ Visit: http://localhost:4200
 
 ## API Endpoints
 
+### Task 1: Core Endpoints
 - `GET /health` - Health check
 - `GET /api/mempool/summary` - Mempool analysis
 - `GET /api/blockchain/lag` - Sync status
+
+### Task 2: Event Streaming Endpoints (In Progress)
+- `GET /api/events/blocks` - Recent block events
+- `GET /api/events/transactions` - Recent transaction events
+- `GET /api/events/state-comparison` - Blockchain state comparison
 
 See backend README for detailed API documentation.
 
