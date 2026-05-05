@@ -3,6 +3,7 @@ import { BitcoinApiService } from '../services/bitcoin-api.service';
 import { MempoolSummary } from '../models/mempool.model';
 import { BlockchainLag } from '../models/blockchain.model';
 import { Subject, interval, takeUntil, switchMap } from 'rxjs';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -35,7 +36,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    this.bitcoinApi.getHealth().subscribe({
+    this.bitcoinApi.getHealth().pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.isConnected = true;
         this.fetchMempoolAndBlockchain();
@@ -49,34 +50,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private fetchMempoolAndBlockchain(): void {
-    Promise.all([
-      new Promise<void>((resolve, reject) => {
-        this.bitcoinApi.getMempoolSummary().subscribe({
-          next: (data) => {
-            this.mempool = data;
-            this.lastUpdated = new Date();
-            resolve();
-          },
-          error: (err) => {
-            this.error = 'Failed to fetch mempool data';
-            reject(err);
-          }
-        });
-      }),
-      new Promise<void>((resolve, reject) => {
-        this.bitcoinApi.getBlockchainLag().subscribe({
-          next: (data) => {
-            this.blockchain = data;
-            resolve();
-          },
-          error: (err) => {
-            this.error = 'Failed to fetch blockchain data';
-            reject(err);
-          }
-        });
-      })
-    ]).finally(() => {
-      this.loading = false;
+    forkJoin([
+      this.bitcoinApi.getMempoolSummary(),
+      this.bitcoinApi.getBlockchainLag()
+    ]).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ([mempoolData, blockchainData]) => {
+        this.mempool = mempoolData;
+        this.blockchain = blockchainData;
+        this.lastUpdated = new Date();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching data:', err);
+        this.error = 'Failed to fetch blockchain data';
+        this.loading = false;
+      }
     });
   }
 

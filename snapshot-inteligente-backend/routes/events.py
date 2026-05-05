@@ -69,7 +69,7 @@ class StateComparisonResponse(BaseModel):
     """Response model for state comparison endpoint."""
     status: str = Field(..., description="Status: 'synced' or 'divergence'")
     divergence_detected: bool = Field(..., description="Whether divergence detected")
-    buffer_latest_block: Optional[BlockStateResponse] = Field(..., description="Latest block from buffer")
+    buffer_latest_block: Optional[BlockStateResponse] = Field(None, description="Latest block from buffer")
     rpc_latest_block: Optional[BlockStateResponse] = Field(..., description="Latest block from RPC")
     reorg_depth: int = Field(..., description="Number of blocks diverged (reorg depth)")
     warning: Optional[str] = Field(None, description="Warning message if divergence detected")
@@ -120,6 +120,44 @@ class EventStatsResponse(BaseModel):
                 "last_transaction_received": "2026-05-01T14:30:28Z",
                 "uptime_seconds": 3600,
                 "events_received": {"blocks": 42, "transactions": 385}
+            }
+        }
+
+
+class EventSummaryResponse(BaseModel):
+    """Response model for event summary (Tarefa 02)."""
+    blocks_observed: int = Field(..., description="Number of block events observed")
+    tx_observed: int = Field(..., description="Number of transaction events observed")
+    last_event_time: Optional[float] = Field(..., description="Unix timestamp of last event")
+    tx_per_second: float = Field(..., description="Average transaction rate (tx/s)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "blocks_observed": 3,
+                "tx_observed": 120,
+                "last_event_time": 1712345678,
+                "tx_per_second": 4.2
+            }
+        }
+
+
+class LatestEventsResponse(BaseModel):
+    """Response model for latest events (Tarefa 02)."""
+    blocks: List[dict] = Field(..., description="Latest blocks with hash and timestamp")
+    txs: List[dict] = Field(..., description="Latest transactions with txid and timestamp")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "blocks": [
+                    {"hash": "abc...", "ts": 1712345600},
+                    {"hash": "def...", "ts": 1712345678}
+                ],
+                "txs": [
+                    {"txid": "tx1...", "ts": 1712345670},
+                    {"txid": "tx2...", "ts": 1712345675}
+                ]
             }
         }
 
@@ -224,6 +262,72 @@ async def get_recent_transactions(
         )
 
 
+@router.get("/summary", response_model=EventSummaryResponse)
+async def get_event_summary(
+    event_buffer: EventBuffer = Depends(get_event_buffer)
+):
+    """
+    Get summary of recent ZMQ events (Tarefa 02 requirement).
+    
+    Returns:
+        blocks_observed, tx_observed, last_event_time, tx_per_second
+    """
+    try:
+        logger.info("GET /api/events/summary")
+        stats = await event_buffer.get_stats()
+        
+        # Get uptime from listener
+        from dependencies import zmq_listener
+        start_time = getattr(zmq_listener, 'start_time', None)
+        uptime = await event_buffer.get_uptime(start_time) or 0
+        
+        # Calculate tx_per_second
+        tx_total = stats["transactions_received_total"]
+        tx_per_second = tx_total / uptime if uptime > 0 else 0.0
+        
+        last_event_time = max(
+            stats["last_block_time"] or 0,
+            stats["last_tx_time"] or 0
+        ) or None
+        
+        return EventSummaryResponse(
+            blocks_observed=stats["blocks_received_total"],
+            tx_observed=tx_total,
+            last_event_time=last_event_time,
+            tx_per_second=round(tx_per_second, 2)
+        )
+    except Exception as e:
+        logger.error(f"Error getting event summary: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/latest", response_model=LatestEventsResponse)
+async def get_latest_events(
+    limit: int = Query(10, ge=1, le=50),
+    event_buffer: EventBuffer = Depends(get_event_buffer)
+):
+    """
+    Get latest blocks and transactions (Tarefa 02 requirement).
+    
+    Returns:
+        blocks: list of {hash, ts}
+        txs: list of {txid, ts}
+    """
+    try:
+        logger.info(f"GET /api/events/latest?limit={limit}")
+        
+        blocks = await event_buffer.get_recent_blocks(limit)
+        txs = await event_buffer.get_recent_transactions(limit)
+        
+        return LatestEventsResponse(
+            blocks=[{"hash": b.block_hash, "ts": b.received_at} for b in blocks],
+            txs=[{"txid": t.txid, "ts": t.received_at} for t in txs]
+        )
+    except Exception as e:
+        logger.error(f"Error getting latest events: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @router.get("/state-comparison", response_model=StateComparisonResponse)
 async def get_state_comparison(
     event_buffer: EventBuffer = Depends(get_event_buffer)
@@ -236,32 +340,46 @@ async def get_state_comparison(
     
     Returns:
         200 OK: State comparison result
-        503 Service Unavailable: RPC or ZMQ unavailable
+        503 Service Unavailable: RPC unavailable
     """
     try:
         logger.info(f"GET /api/events/state-comparison")
         
-        # Get latest block from buffer
-        latest_buffer_block = await event_buffer.get_latest_block()
-        
-        if not latest_buffer_block:
-            raise HTTPException(
-                status_code=503,
-                detail="No block events in buffer yet"
-            )
-        
-        # Get latest block from RPC (for comparison)
-        from dependencies import bitcoin_service
+        # Get latest block from RPC
+        from dependencies import rpc_client
         try:
-            blockchain_lag = bitcoin_service.get_blockchain_lag()
+            rpc_best_hash = rpc_client.call('getbestblockhash')
+            rpc_blockchain_info = rpc_client.call('getblockchaininfo')
+            rpc_block_height = rpc_blockchain_info.get('blocks', 0)
             
-            # For now, we'll compare hashes from buffer vs RPC
-            # This is a placeholder - in production you'd fetch the actual block
-            # hash from RPC via getblockhash(height)
+            # Get latest block from buffer
+            latest_buffer_block = await event_buffer.get_latest_block()
+            
+            # If no buffer data, return synced state with RPC data only
+            if not latest_buffer_block:
+                response = StateComparisonResponse(
+                    status="synced",
+                    divergence_detected=False,
+                    buffer_latest_block=None,
+                    rpc_latest_block=BlockStateResponse(
+                        hash=rpc_best_hash,
+                        height=rpc_block_height,
+                        timestamp=datetime.utcnow().isoformat()
+                    ),
+                    reorg_depth=0,
+                    warning=None,
+                    comparison_timestamp=datetime.utcnow().isoformat()
+                )
+                logger.info("State comparison: no buffer data yet, RPC is synced")
+                return response
+            
+            # Compare buffer with RPC
+            divergence = latest_buffer_block.block_hash != rpc_best_hash
+            reorg_depth = 1 if divergence else 0
             
             response = StateComparisonResponse(
-                status="synced",
-                divergence_detected=False,
+                status="divergence" if divergence else "synced",
+                divergence_detected=divergence,
                 buffer_latest_block=BlockStateResponse(
                     hash=latest_buffer_block.block_hash,
                     height=latest_buffer_block.block_height,
@@ -269,11 +387,12 @@ async def get_state_comparison(
                     timestamp=latest_buffer_block.timestamp
                 ),
                 rpc_latest_block=BlockStateResponse(
-                    hash="rpc_hash_placeholder",
-                    height=blockchain_lag.blocks,
+                    hash=rpc_best_hash,
+                    height=rpc_block_height,
                     timestamp=datetime.utcnow().isoformat()
                 ),
-                reorg_depth=0,
+                reorg_depth=reorg_depth,
+                warning="Blockchain divergence detected! Buffer and RPC hashes differ." if divergence else None,
                 comparison_timestamp=datetime.utcnow().isoformat()
             )
             
@@ -322,6 +441,8 @@ async def get_event_stats(
         # Get listener status
         from dependencies import zmq_listener
         zmq_status = "connected" if zmq_listener.is_connected() else "disconnected"
+        start_time = getattr(zmq_listener, 'start_time', None)
+        uptime = await event_buffer.get_uptime(start_time)
         
         # Convert timestamps
         last_block_ts = None
@@ -341,7 +462,7 @@ async def get_event_stats(
             buffer_transactions_capacity=stats["transactions_capacity"],
             last_block_received=last_block_ts,
             last_transaction_received=last_tx_ts,
-            uptime_seconds=None,  # TODO: Calculate from zmq_listener startup
+            uptime_seconds=uptime,
             events_received={
                 "blocks": stats["blocks_received_total"],
                 "transactions": stats["transactions_received_total"]
