@@ -7,16 +7,24 @@ import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 
 import { AppComponent } from './app.component';
-import { DashboardComponent } from './components/dashboard.component';
-import { MempoolCardComponent } from './components/mempool-card.component';
-import { BlockchainCardComponent } from './components/blockchain-card/blockchain-card.component';
+import {
+  DashboardComponent,
+  MempoolCardComponent,
+  BlockchainCardComponent,
+  EventActivityCardComponent,
+  BlockchainReorgDetectorComponent,
+  LatestEventsCardComponent
+} from './components';
 
 @NgModule({
   declarations: [
     AppComponent,
     DashboardComponent,
     MempoolCardComponent,
-    BlockchainCardComponent
+    BlockchainCardComponent,
+    EventActivityCardComponent,
+    BlockchainReorgDetectorComponent,
+    LatestEventsCardComponent
   ],
   imports: [
     BrowserModule,

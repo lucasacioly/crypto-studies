@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { MempoolSummary } from '../models/mempool.model';
 import { BlockchainLag } from '../models/blockchain.model';
+import { BlockEvent, TransactionEvent, StateComparison, EventStats, EventSummary, LatestEvents } from '../models/events.model';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,7 @@ export class BitcoinApiService {
 
   constructor(private http: HttpClient) {}
 
+  // Task 1: Mempool & Blockchain
   getMempoolSummary(): Observable<MempoolSummary> {
     return this.http.get<MempoolSummary>(`${this.apiUrl}/mempool/summary`);
   }
@@ -23,5 +25,51 @@ export class BitcoinApiService {
 
   getHealth(): Observable<any> {
     return this.http.get('http://localhost:8000/health');
+  }
+
+  // Task 2: Event Streaming
+  getEventSummary(): Observable<EventSummary> {
+    return this.http.get<EventSummary>(`${this.apiUrl}/events/summary`);
+  }
+
+  getLatestEvents(limit: number = 10): Observable<LatestEvents> {
+    const params = new HttpParams().set('limit', limit.toString());
+    return this.http.get<LatestEvents>(`${this.apiUrl}/events/latest`, { params });
+  }
+
+  /**
+   * Get recent block events from the buffer.
+   * @param limit Number of blocks to return (1-50, default: 10)
+   */
+  getRecentBlocks(limit: number = 10): Observable<BlockEvent[]> {
+    const params = new HttpParams().set('limit', limit.toString());
+    return this.http.get<BlockEvent[]>(`${this.apiUrl}/events/blocks`, { params });
+  }
+
+  /**
+   * Get recent transaction events from the buffer.
+   * @param limit Number of transactions to return (1-100, default: 20)
+   * @param feeCategory Optional filter by 'low', 'medium', or 'high'
+   */
+  getRecentTransactions(limit: number = 20, feeCategory?: string): Observable<TransactionEvent[]> {
+    let params = new HttpParams().set('limit', limit.toString());
+    if (feeCategory) {
+      params = params.set('fee_category', feeCategory);
+    }
+    return this.http.get<TransactionEvent[]>(`${this.apiUrl}/events/transactions`, { params });
+  }
+
+  /**
+   * Compare buffer state with live RPC to detect blockchain divergence.
+   */
+  getStateComparison(): Observable<StateComparison> {
+    return this.http.get<StateComparison>(`${this.apiUrl}/events/state-comparison`);
+  }
+
+  /**
+   * Get event buffer statistics and ZMQ listener status.
+   */
+  getEventStats(): Observable<EventStats> {
+    return this.http.get<EventStats>(`${this.apiUrl}/events/stats`);
   }
 }

@@ -1,0 +1,129 @@
+<div class="event-activity-card">
+  <!-- Header -->
+  <div class="card-header">
+    <div class="header-left">
+      <h2>Event Activity</h2>
+      <span class="status-badge" [ngClass]="'status-' + zmqStatus">
+        <span class="status-dot"></span>
+        {{ zmqStatus === 'connected' ? 'ZMQ Connected' : 'ZMQ Disconnected' }}
+      </span>
+    </div>
+    <button class="btn-refresh" (click)="refresh()" [disabled]="isLoading">
+      <span *ngIf="!isLoading">⟳</span>
+      <span *ngIf="isLoading" class="spinner"></span>
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="error-message">
+    <span>⚠️ {{ error }}</span>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && !eventStats" class="loading-state">
+    <div class="spinner-large"></div>
+    <p>Loading event data...</p>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading || eventStats" class="card-content">
+    <!-- Buffer Status -->
+    <div class="buffer-status">
+      <div class="status-item">
+        <div class="status-label">
+          <span>Blocks Buffer</span>
+          <span class="count">{{ eventStats?.buffer_blocks_count || 0 }}/{{ eventStats?.buffer_blocks_capacity || 50 }}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [ngClass]="getBufferFillClass(bufferFillBlocks)" [style.width.%]="bufferFillBlocks"></div>
+        </div>
+      </div>
+
+      <div class="status-item">
+        <div class="status-label">
+          <span>Transactions Buffer</span>
+          <span class="count">{{ eventStats?.buffer_transactions_count || 0 }}/{{ eventStats?.buffer_transactions_capacity || 500 }}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [ngClass]="getBufferFillClass(bufferFillTransactions)" [style.width.%]="bufferFillTransactions"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Blocks -->
+    <div class="events-section">
+      <h3>Recent Blocks</h3>
+      <div *ngIf="recentBlocks.length === 0" class="empty-state">
+        <p>No block events yet</p>
+      </div>
+      <div *ngIf="recentBlocks.length > 0" class="events-list blocks-list">
+        <div *ngFor="let block of recentBlocks | slice:-5" class="event-item block-event">
+          <div class="event-header">
+            <span class="event-type">⬜ Block</span>
+            <span class="event-time">{{ getRelativeTime(block.timestamp) }}</span>
+          </div>
+          <div class="event-details">
+            <div class="detail-row">
+              <span class="label">Hash:</span>
+              <span class="value hash" [title]="block.block_hash">{{ truncateHash(block.block_hash) }}</span>
+            </div>
+            <div *ngIf="block.block_height" class="detail-row">
+              <span class="label">Height:</span>
+              <span class="value">{{ block.block_height }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="events-section">
+      <h3>Recent Transactions</h3>
+      <div *ngIf="recentTransactions.length === 0" class="empty-state">
+        <p>No transaction events yet</p>
+      </div>
+      <div *ngIf="recentTransactions.length > 0" class="events-list tx-list">
+        <div *ngFor="let tx of recentTransactions | slice:-10" class="event-item tx-event">
+          <div class="event-header">
+            <span class="event-type">📤 TX</span>
+            <span class="event-time">{{ getRelativeTime(tx.timestamp) }}</span>
+          </div>
+          <div class="event-details">
+            <div class="detail-row">
+              <span class="label">TXID:</span>
+              <span class="value hash" [title]="tx.txid">{{ truncateHash(tx.txid) }}</span>
+            </div>
+            <div *ngIf="tx.fee_rate_sat_vb" class="detail-row">
+              <span class="label">Fee Rate:</span>
+              <span class="value">{{ tx.fee_rate_sat_vb }} sat/vB</span>
+            </div>
+            <div *ngIf="tx.size_vbytes" class="detail-row">
+              <span class="label">Size:</span>
+              <span class="value">{{ tx.size_vbytes }} vB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="statistics">
+      <div class="stat-item">
+        <div class="stat-label">Total Blocks Received</div>
+        <div class="stat-value">{{ eventStats?.events_received?.blocks || 0 }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Total TXs Received</div>
+        <div class="stat-value">{{ eventStats?.events_received?.transactions || 0 }}</div>
+      </div>
+      <div *ngIf="eventStats?.last_block_received" class="stat-item">
+        <div class="stat-label">Last Block</div>
+        <div class="stat-value small">{{ getRelativeTime(eventStats!.last_block_received!) }}</div>
+      </div>
+      <div *ngIf="eventStats?.last_transaction_received" class="stat-item">
+        <div class="stat-label">Last TX</div>
+        <div class="stat-value small">{{ getRelativeTime(eventStats!.last_transaction_received!) }}</div>
+      </div>
+    </div>
+  </div>
+</div>

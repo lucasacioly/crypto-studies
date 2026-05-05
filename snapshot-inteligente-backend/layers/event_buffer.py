@@ -150,6 +150,18 @@ class EventBuffer:
                 return self.blocks[-1]
             return None
 
+    async def get_latest_transaction(self) -> Optional[TransactionEvent]:
+        """
+        Get the most recent transaction event (thread-safe).
+        
+        Returns:
+            Latest TransactionEvent or None if buffer is empty
+        """
+        async with self.lock:
+            if self.transactions:
+                return self.transactions[-1]
+            return None
+
     async def get_stats(self) -> dict:
         """
         Get buffer statistics.
@@ -168,6 +180,12 @@ class EventBuffer:
                 "last_block_time": self.last_block_time,
                 "last_tx_time": self.last_tx_time,
             }
+
+    async def get_uptime(self, start_time: Optional[float]) -> Optional[int]:
+        """Calculate uptime in seconds."""
+        if start_time:
+            return int(datetime.utcnow().timestamp() - start_time)
+        return None
 
     async def clear(self) -> None:
         """Clear all buffered events."""
@@ -209,6 +227,7 @@ class ZMQListener:
         self.running = False
         self.context: Optional[zmq.asyncio.Context] = None
         self.socket: Optional[zmq.asyncio.Socket] = None
+        self.start_time: Optional[float] = None
         
         logger.info(f"ZMQListener initialized for {self.zmq_url}")
 
@@ -225,6 +244,7 @@ class ZMQListener:
         """
         try:
             self.running = True
+            self.start_time = datetime.utcnow().timestamp()
             logger.info(f"Starting ZMQ listener on {self.zmq_url}")
             
             # Create async ZMQ context
@@ -242,8 +262,11 @@ class ZMQListener:
             # Listen loop
             while self.running:
                 try:
-                    # Receive message (topic, data)
-                    topic, data = await self.socket.recv_multipart()
+                    # Receive message (topic, data, sequence_number)
+                    parts = await self.socket.recv_multipart()
+                    topic = parts[0]
+                    data = parts[1]
+                    # sequence_number = parts[2] if len(parts) > 2 else None
                     
                     if topic == b"hashblock":
                         await self._handle_block_event(data)

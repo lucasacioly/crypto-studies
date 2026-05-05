@@ -35,12 +35,23 @@
     </div>
   </div>
 
-  <!-- Cards Grid -->
-  <div *ngIf="!loading" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Mempool Card -->
-    <app-mempool-card [data]="mempool"></app-mempool-card>
-    
-    <!-- Blockchain Card -->
-    <app-blockchain-card [data]="blockchain"></app-blockchain-card>
-  </div>
+    <!-- Cards Grid -->
+    <div *ngIf="!loading" class="max-w-7xl mx-auto space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Mempool Card -->
+        <app-mempool-card [data]="mempool"></app-mempool-card>
+        
+        <!-- Blockchain Card -->
+        <app-blockchain-card [data]="blockchain"></app-blockchain-card>
+
+        <!-- Blockchain Reorg Detector (Task 2) -->
+        <app-blockchain-reorg-detector></app-blockchain-reorg-detector>
+      </div>
+
+      <!-- Latest Events Card (Task 2) -->
+      <app-latest-events-card></app-latest-events-card>
+
+      <!-- Event Activity Card (Task 2) -->
+      <app-event-activity-card></app-event-activity-card>
+    </div>
 </div>

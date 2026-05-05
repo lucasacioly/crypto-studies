@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/mempool", tags=["mempool"])
+router = APIRouter(prefix="/api/mempool", tags=["mempool"])
 
 @router.get("/summary", response_model=MempoolSummary)
 async def get_mempool_summary(

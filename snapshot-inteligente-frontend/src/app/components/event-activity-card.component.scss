@@ -1,0 +1,243 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+.event-activity-card {
+  @apply bg-white rounded-lg shadow-md p-6 border border-gray-200;
+
+  .card-header {
+    @apply flex justify-between items-center mb-6 pb-4 border-b border-gray-200;
+
+    .header-left {
+      @apply flex items-center gap-4;
+
+      h2 {
+        @apply text-2xl font-bold text-gray-800 m-0;
+      }
+
+      .status-badge {
+        @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium;
+
+        .status-dot {
+          @apply w-2 h-2 rounded-full;
+        }
+
+        &.status-connected {
+          @apply bg-green-100 text-green-700;
+          .status-dot {
+            @apply bg-green-500;
+            animation: pulse 2s infinite;
+          }
+        }
+
+        &.status-disconnected {
+          @apply bg-yellow-100 text-yellow-700;
+          .status-dot {
+            @apply bg-yellow-500;
+          }
+        }
+      }
+    }
+
+    .btn-refresh {
+      @apply p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50;
+      font-size: 1.5rem;
+
+      .spinner {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+      }
+
+      &:hover:not(:disabled) {
+        @apply bg-gray-100;
+      }
+    }
+  }
+
+  .error-message {
+    @apply bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4;
+  }
+
+  .loading-state {
+    @apply flex flex-col items-center justify-center py-12;
+
+    .spinner-large {
+      @apply w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full;
+      animation: spin 1s linear infinite;
+    }
+
+    p {
+      @apply text-gray-600 mt-4;
+    }
+  }
+
+  .card-content {
+    @apply space-y-6;
+
+    .buffer-status {
+      @apply bg-gray-50 p-4 rounded-lg space-y-4;
+
+      .status-item {
+        .status-label {
+          @apply flex justify-between items-center mb-2 text-sm;
+
+          span:first-child {
+            @apply font-medium text-gray-700;
+          }
+
+          .count {
+            @apply text-gray-500 text-xs;
+          }
+        }
+
+        .progress-bar {
+          @apply w-full h-2 bg-gray-200 rounded-full overflow-hidden;
+
+          .progress-fill {
+            @apply h-full transition-all duration-300;
+
+            &.fill-low {
+              @apply bg-green-500;
+            }
+
+            &.fill-medium {
+              @apply bg-yellow-500;
+            }
+
+            &.fill-medium-high {
+              @apply bg-orange-500;
+            }
+
+            &.fill-high {
+              @apply bg-red-500;
+            }
+          }
+        }
+      }
+    }
+
+    .events-section {
+      h3 {
+        @apply text-lg font-semibold text-gray-800 mb-3;
+      }
+
+      .empty-state {
+        @apply text-center py-6 text-gray-500;
+        p {
+          @apply m-0;
+        }
+      }
+
+      .events-list {
+        @apply space-y-2;
+
+        .event-item {
+          @apply border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors;
+
+          .event-header {
+            @apply flex justify-between items-center mb-2;
+
+            .event-type {
+              @apply font-medium text-gray-700;
+            }
+
+            .event-time {
+              @apply text-xs text-gray-500;
+            }
+          }
+
+          .event-details {
+            @apply space-y-1;
+
+            .detail-row {
+              @apply flex justify-between text-sm;
+
+              .label {
+                @apply font-medium text-gray-600;
+              }
+
+              .value {
+                @apply text-gray-800;
+
+                &.hash {
+                  @apply font-mono text-xs bg-gray-100 px-2 py-1 rounded cursor-help;
+                }
+              }
+            }
+          }
+
+          &.block-event {
+            @apply border-l-4 border-l-blue-500;
+          }
+
+          &.tx-event {
+            @apply border-l-4 border-l-purple-500;
+          }
+        }
+      }
+    }
+
+    .statistics {
+      @apply grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-gray-200;
+
+      .stat-item {
+        @apply text-center;
+
+        .stat-label {
+          @apply text-xs text-gray-600 font-medium uppercase;
+        }
+
+        .stat-value {
+          @apply text-2xl font-bold text-gray-800 mt-1;
+
+          &.small {
+            @apply text-lg;
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .event-activity-card {
+    @apply p-4;
+
+    .card-header {
+      @apply flex-col items-start gap-3;
+
+      .header-left {
+        @apply flex-col gap-2 w-full;
+
+        h2 {
+          @apply text-xl;
+        }
+      }
+    }
+
+    .card-content {
+      .statistics {
+        @apply grid-cols-2;
+      }
+    }
+  }
+}
