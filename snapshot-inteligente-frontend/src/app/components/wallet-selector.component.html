@@ -1,0 +1,61 @@
+<div class="wallet-selector-container">
+  <div class="wallet-selector-card">
+    <div class="card-header">
+      <h3>💰 Seleção de Wallet</h3>
+      <span class="status-indicator" [class]="getStatusColor()">{{ getStatusIcon() }}</span>
+    </div>
+
+    <div class="card-body">
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="loading">
+        <span>Carregando wallets...</span>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="error && !isLoading" class="error">
+        <span>{{ error }}</span>
+      </div>
+
+      <!-- No wallets -->
+      <div *ngIf="!isLoading && availableWallets.length === 0 && !error" class="no-wallets">
+        <span>Nenhuma wallet disponível</span>
+      </div>
+
+      <!-- Single wallet (auto-selected) -->
+      <div *ngIf="!isLoading && availableWallets.length === 1" class="single-wallet">
+        <div class="wallet-name">{{ selectedWallet }}</div>
+        <div class="wallet-info" *ngIf="walletInfo">
+          <div class="info-item">
+            <span class="label">Saldo:</span>
+            <span class="value">{{ walletInfo.balance | number: '1.8-8' }} BTC</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Transações:</span>
+            <span class="value">{{ walletInfo.txcount }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multiple wallets (selector) -->
+      <div *ngIf="!isLoading && availableWallets.length > 1" class="wallet-select">
+        <select [(ngModel)]="selectedWallet" (change)="selectWallet($event.target.value)" class="select-input">
+          <option value="" disabled>Escolha uma wallet...</option>
+          <option *ngFor="let wallet of availableWallets" [value]="wallet">
+            {{ wallet }}
+          </option>
+        </select>
+
+        <div class="wallet-info" *ngIf="walletInfo && selectedWallet">
+          <div class="info-item">
+            <span class="label">Saldo:</span>
+            <span class="value">{{ walletInfo.balance | number: '1.8-8' }} BTC</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Transações:</span>
+            <span class="value">{{ walletInfo.txcount }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

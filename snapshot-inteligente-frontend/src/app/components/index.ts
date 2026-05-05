@@ -4,3 +4,5 @@ export { BlockchainCardComponent } from './blockchain-card/blockchain-card.compo
 export { EventActivityCardComponent } from './event-activity-card.component';
 export { BlockchainReorgDetectorComponent } from './blockchain-reorg-detector.component';
 export { LatestEventsCardComponent } from './latest-events-card/latest-events-card.component';
+export { WalletSelectorComponent } from './wallet-selector.component';
+export { WalletStatusCardComponent } from './wallet-status-card.component';

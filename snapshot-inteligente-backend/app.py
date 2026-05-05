@@ -30,11 +30,15 @@ from routes.health import router as health_router
 from routes.mempool import router as mempool_router
 from routes.blockchain import router as blockchain_router
 from routes.events import router as events_router
+from routes.wallets import router as wallets_router
+from routes.transactions import router as transactions_router
 
 app.include_router(health_router)
 app.include_router(mempool_router)
 app.include_router(blockchain_router)
 app.include_router(events_router)
+app.include_router(wallets_router)
+app.include_router(transactions_router)
 
 # Background task for ZMQ listener
 zmq_task = None

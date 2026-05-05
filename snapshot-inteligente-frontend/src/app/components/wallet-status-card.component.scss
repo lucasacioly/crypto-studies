@@ -1,0 +1,160 @@
+.wallet-status-container {
+  width: 100%;
+}
+
+.status-card {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  background: rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+}
+
+.refresh-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(180deg);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.card-body {
+  padding: 1.5rem;
+  color: white;
+}
+
+.loading {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.95rem;
+}
+
+.error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+  border-radius: 8px;
+  border-left: 4px solid #fca5a5;
+  padding: 1rem;
+}
+
+.status-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.wallet-name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+
+  label {
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+    margin: 0;
+  }
+
+  span {
+    color: #fbbf24;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+  }
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.status-item {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+
+  .item-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .item-value {
+    color: #fbbf24;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+  }
+}
+
+.status-info {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+
+  p {
+    margin: 0;
+
+    strong {
+      color: #fbbf24;
+      font-weight: 600;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    h3 {
+      font-size: 1rem;
+    }
+  }
+}

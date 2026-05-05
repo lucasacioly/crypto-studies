@@ -88,4 +88,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
     return `${Math.floor(minutes / 60)} hour${Math.floor(minutes / 60) > 1 ? 's' : ''} ago`;
   }
+
+  /**
+   * Handle wallet selection event from wallet selector component (Task 3)
+   */
+  onWalletSelected(wallet: string): void {
+    console.log(`Wallet selected: ${wallet}`);
+    // The wallet is already selected in the backend
+    // Child components will use the selected wallet for operations
+  }
 }

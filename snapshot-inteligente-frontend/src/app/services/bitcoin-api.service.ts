@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import { MempoolSummary } from '../models/mempool.model';
 import { BlockchainLag } from '../models/blockchain.model';
 import { BlockEvent, TransactionEvent, StateComparison, EventStats, EventSummary, LatestEvents } from '../models/events.model';
+import { WalletListResponse, WalletSelectResponse, WalletStatus, TransactionDetail } from '../models/wallet.model';
 
 @Injectable({
   providedIn: 'root'
@@ -71,5 +72,36 @@ export class BitcoinApiService {
    */
   getEventStats(): Observable<EventStats> {
     return this.http.get<EventStats>(`${this.apiUrl}/events/stats`);
+  }
+
+  // Task 3: Multiple Wallets Support
+  /**
+   * List available and loaded wallets.
+   */
+  listWallets(): Observable<WalletListResponse> {
+    return this.http.get<WalletListResponse>(`${this.apiUrl}/wallet/list`);
+  }
+
+  /**
+   * Select a wallet for subsequent operations.
+   * @param wallet Wallet name to select
+   */
+  selectWallet(wallet: string): Observable<WalletSelectResponse> {
+    return this.http.post<WalletSelectResponse>(`${this.apiUrl}/wallet/select`, { wallet });
+  }
+
+  /**
+   * Get current selected wallet status (balance and UTXOs).
+   */
+  getWalletStatus(): Observable<WalletStatus> {
+    return this.http.get<WalletStatus>(`${this.apiUrl}/wallet/status`);
+  }
+
+  /**
+   * Get detailed transaction information with interpretation.
+   * @param txid Transaction ID
+   */
+  getTransactionDetail(txid: string): Observable<TransactionDetail> {
+    return this.http.get<TransactionDetail>(`${this.apiUrl}/tx/${txid}`);
   }
 }

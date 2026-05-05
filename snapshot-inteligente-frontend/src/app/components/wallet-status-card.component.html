@@ -1,0 +1,49 @@
+<div class="wallet-status-container" *ngIf="walletStatus">
+  <div class="status-card">
+    <div class="card-header">
+      <h3>💵 Status da Wallet</h3>
+      <button class="refresh-btn" (click)="refresh()" [disabled]="isLoading" title="Atualizar">
+        🔄
+      </button>
+    </div>
+
+    <div class="card-body">
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="loading">
+        <span>Carregando...</span>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="error && !isLoading" class="error">
+        <span>{{ error }}</span>
+      </div>
+
+      <!-- Content -->
+      <div *ngIf="!isLoading && walletStatus && !error" class="status-content">
+        <div class="wallet-name">
+          <label>Wallet Ativa:</label>
+          <span>{{ walletStatus.wallet }}</span>
+        </div>
+
+        <div class="status-grid">
+          <div class="status-item">
+            <div class="item-label">Saldo</div>
+            <div class="item-value">{{ walletStatus.balance | number: '1.8-8' }} BTC</div>
+          </div>
+
+          <div class="status-item">
+            <div class="item-label">UTXOs Disponíveis</div>
+            <div class="item-value">{{ walletStatus.utxos }}</div>
+          </div>
+        </div>
+
+        <div class="status-info">
+          <p>
+            ℹ️ Esta wallet tem <strong>{{ walletStatus.balance | number: '1.8-8' }} BTC</strong> em
+            <strong>{{ walletStatus.utxos }}</strong> UTXO(s) disponível(is).
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

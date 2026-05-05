@@ -5,6 +5,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 import { AppComponent } from './app.component';
 import {
@@ -13,7 +14,9 @@ import {
   BlockchainCardComponent,
   EventActivityCardComponent,
   BlockchainReorgDetectorComponent,
-  LatestEventsCardComponent
+  LatestEventsCardComponent,
+  WalletSelectorComponent,
+  WalletStatusCardComponent
 } from './components';
 
 @NgModule({
@@ -24,7 +27,9 @@ import {
     BlockchainCardComponent,
     EventActivityCardComponent,
     BlockchainReorgDetectorComponent,
-    LatestEventsCardComponent
+    LatestEventsCardComponent,
+    WalletSelectorComponent,
+    WalletStatusCardComponent
   ],
   imports: [
     BrowserModule,
@@ -32,7 +37,8 @@ import {
     HttpClientModule,
     MatCardModule,
     MatButtonModule,
-    CommonModule
+    CommonModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Dict
 from config import config
 from models.errors import RPCConnectionError, RPCMethodError
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,7 @@ class RPCClient:
     """
     Bitcoin Core RPC client.
     Handles connection, serialization, and error handling.
+    Supports multiple wallets via /wallet/WALLET_NAME endpoints.
     """
     
     def __init__(
@@ -30,14 +32,16 @@ class RPCClient:
         self.auth = (self.user, self.password)
         self._session = requests.Session()
         self._session.auth = self.auth
+        self.selected_wallet: Optional[str] = None
     
-    def call(self, method: str, params: List[Any] = None) -> dict:
+    def call(self, method: str, params: List[Any] = None, wallet: Optional[str] = None) -> dict:
         """
         Execute a Bitcoin RPC call.
         
         Args:
             method: RPC method name (e.g., 'getmempoolinfo')
             params: List of parameters or None
+            wallet: Wallet name for wallet-specific calls. If None, uses selected_wallet if available.
             
         Returns:
             Response data from Bitcoin Core
@@ -49,6 +53,12 @@ class RPCClient:
         if params is None:
             params = []
         
+        # Use provided wallet or selected wallet
+        wallet_to_use = wallet or self.selected_wallet
+        url = self.url
+        if wallet_to_use:
+            url = f"{self.url}/wallet/{wallet_to_use}"
+        
         payload = {
             "jsonrpc": "2.0",
             "method": method,
@@ -57,16 +67,16 @@ class RPCClient:
         }
         
         try:
-            logger.debug(f"RPC call: {method} with params: {params}")
+            logger.debug(f"RPC call: {method} with params: {params} (wallet: {wallet_to_use or 'none'})")
             response = self._session.post(
-                self.url,
+                url,
                 json=payload,
                 timeout=self.timeout
             )
             response.raise_for_status()
         except requests.exceptions.ConnectionError as e:
             logger.error(f"RPC Connection failed: {e}")
-            raise RPCConnectionError(f"Cannot connect to {self.url}: {str(e)}")
+            raise RPCConnectionError(f"Cannot connect to {url}: {str(e)}")
         except requests.exceptions.Timeout as e:
             logger.error(f"RPC Timeout: {e}")
             raise RPCConnectionError(f"RPC call timed out after {self.timeout}s")
@@ -94,6 +104,33 @@ class RPCClient:
         
         logger.debug(f"RPC response for {method}: success")
         return result["result"]
+    
+    def select_wallet(self, wallet_name: str) -> None:
+        """Select a wallet for subsequent calls."""
+        self.selected_wallet = wallet_name
+        logger.info(f"Selected wallet: {wallet_name}")
+    
+    def get_selected_wallet(self) -> Optional[str]:
+        """Get the currently selected wallet."""
+        return self.selected_wallet
+    
+    def list_wallets(self) -> List[str]:
+        """List all loaded wallets."""
+        return self.call('listwallets')
+    
+    def list_wallet_dir(self) -> dict:
+        """List all wallet directories."""
+        return self.call('listwalletdir')
+    
+    def load_wallet(self, wallet_name: str) -> dict:
+        """Load a wallet if not already loaded."""
+        try:
+            return self.call('loadwallet', [wallet_name])
+        except RPCMethodError as e:
+            if "already loaded" in str(e):
+                logger.info(f"Wallet {wallet_name} already loaded")
+                return {"name": wallet_name, "warning": "already loaded"}
+            raise
     
     def close(self):
         """Close the RPC session."""
