@@ -16,7 +16,9 @@ import {
   BlockchainReorgDetectorComponent,
   LatestEventsCardComponent,
   WalletSelectorComponent,
-  WalletStatusCardComponent
+  WalletStatusCardComponent,
+  SendTransactionComponent,
+  TransactionHistoryComponent
 } from './components';
 
 @NgModule({
@@ -29,7 +31,9 @@ import {
     BlockchainReorgDetectorComponent,
     LatestEventsCardComponent,
     WalletSelectorComponent,
-    WalletStatusCardComponent
+    WalletStatusCardComponent,
+    SendTransactionComponent,
+    TransactionHistoryComponent
   ],
   imports: [
     BrowserModule,

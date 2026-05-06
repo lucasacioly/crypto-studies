@@ -35,28 +35,34 @@
     </div>
   </div>
 
-     <!-- Cards Grid -->
-     <div *ngIf="!loading" class="max-w-7xl mx-auto space-y-6">
-       <!-- Task 3: Wallet Selector and Status -->
-       <app-wallet-selector (walletSelected)="onWalletSelected($event)"></app-wallet-selector>
-       
-       <app-wallet-status-card></app-wallet-status-card>
+      <!-- Cards Grid -->
+      <div *ngIf="!loading" class="max-w-7xl mx-auto space-y-6">
+        <!-- Task 3: Wallet Selector and Status -->
+        <app-wallet-selector (walletSelected)="onWalletSelected($event)"></app-wallet-selector>
+        
+        <app-wallet-status-card></app-wallet-status-card>
 
-       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-         <!-- Mempool Card -->
-         <app-mempool-card [data]="mempool"></app-mempool-card>
-         
-         <!-- Blockchain Card -->
-         <app-blockchain-card [data]="blockchain"></app-blockchain-card>
+        <!-- Send Transaction Card -->
+        <app-send-transaction></app-send-transaction>
 
-         <!-- Blockchain Reorg Detector (Task 2) -->
-         <app-blockchain-reorg-detector></app-blockchain-reorg-detector>
-       </div>
+        <!-- Transaction History Card -->
+        <app-transaction-history></app-transaction-history>
 
-       <!-- Latest Events Card (Task 2) -->
-       <app-latest-events-card></app-latest-events-card>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Mempool Card -->
+          <app-mempool-card [data]="mempool"></app-mempool-card>
+          
+          <!-- Blockchain Card -->
+          <app-blockchain-card [data]="blockchain"></app-blockchain-card>
 
-       <!-- Event Activity Card (Task 2) -->
-       <app-event-activity-card></app-event-activity-card>
-     </div>
+          <!-- Blockchain Reorg Detector (Task 2) -->
+          <app-blockchain-reorg-detector></app-blockchain-reorg-detector>
+        </div>
+
+        <!-- Latest Events Card (Task 2) -->
+        <app-latest-events-card></app-latest-events-card>
+
+        <!-- Event Activity Card (Task 2) -->
+        <app-event-activity-card></app-event-activity-card>
+      </div>
 </div>

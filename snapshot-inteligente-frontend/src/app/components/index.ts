@@ -6,3 +6,5 @@ export { BlockchainReorgDetectorComponent } from './blockchain-reorg-detector.co
 export { LatestEventsCardComponent } from './latest-events-card/latest-events-card.component';
 export { WalletSelectorComponent } from './wallet-selector.component';
 export { WalletStatusCardComponent } from './wallet-status-card.component';
+export { SendTransactionComponent } from './send-transaction.component';
+export { TransactionHistoryComponent } from './transaction-history.component';
