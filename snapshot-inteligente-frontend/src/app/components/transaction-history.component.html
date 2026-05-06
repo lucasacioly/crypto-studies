@@ -1,0 +1,102 @@
+<div class="bg-white rounded-lg shadow-md p-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Sent Transactions</h2>
+    <button
+      (click)="refresh()"
+      [disabled]="isLoading"
+      class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+    >
+      {{ isLoading ? 'Loading...' : 'Refresh' }}
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+    {{ error }}
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="transactions.length === 0 && !isLoading" class="text-center py-8">
+    <p class="text-gray-500">No transactions sent yet</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && transactions.length === 0" class="text-center py-8">
+    <div class="inline-block">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+    <p class="mt-4 text-gray-600">Loading transactions...</p>
+  </div>
+
+  <!-- Transaction Table -->
+  <div *ngIf="transactions.length > 0" class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-gray-100 border-b">
+        <tr>
+          <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+          <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Recipient</th>
+          <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount</th>
+          <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Fee</th>
+          <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Status</th>
+          <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tx of transactions" class="border-b hover:bg-gray-50 transition">
+          <!-- Date -->
+          <td class="px-4 py-3 text-sm text-gray-700">
+            {{ formatDate(tx.broadcast_at) }}
+          </td>
+
+          <!-- Recipient -->
+          <td class="px-4 py-3 text-sm font-mono text-gray-700">
+            <span class="truncate max-w-xs inline-block">
+              {{ tx.recipient.substring(0, 16) }}...
+            </span>
+          </td>
+
+          <!-- Amount -->
+          <td class="px-4 py-3 text-sm text-right text-gray-700">
+            {{ tx.amount_btc }} BTC
+          </td>
+
+          <!-- Fee -->
+          <td class="px-4 py-3 text-sm text-right text-gray-700">
+            {{ tx.fee_sat }} sat
+          </td>
+
+          <!-- Status -->
+          <td class="px-4 py-3 text-center">
+            <span
+              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold"
+              [ngClass]="{
+                'bg-yellow-100 text-yellow-800': tx.status === 'broadcast',
+                'bg-green-100 text-green-800': tx.status === 'confirmed',
+                'bg-red-100 text-red-800': tx.status === 'failed'
+              }"
+            >
+              {{ getStatusIcon(tx.status) }} {{ tx.status | uppercase }}
+            </span>
+          </td>
+
+          <!-- Action -->
+          <td class="px-4 py-3 text-center">
+            <button
+              (click)="copyToClipboard(tx.txid)"
+              title="Copy TXID"
+              class="text-blue-600 hover:text-blue-800 transition text-sm"
+            >
+              Copy TXID
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Transaction Count -->
+  <div *ngIf="transactions.length > 0" class="mt-4 text-sm text-gray-600">
+    Total: {{ transactions.length }} transaction{{ transactions.length !== 1 ? 's' : '' }}
+  </div>
+</div>
