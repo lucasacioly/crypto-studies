@@ -2,6 +2,8 @@ from layers.rpc_client import RPCClient
 from layers.cache_layer import CacheLayer
 from layers.bitcoin_service import BitcoinService
 from layers.event_buffer import EventBuffer, ZMQListener
+from layers.transaction_builder import TransactionBuilder
+from layers.transaction_signer import TransactionSigner
 from config import config
 
 # Initialize services (singletons)
