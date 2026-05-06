@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 import { MempoolSummary } from '../models/mempool.model';
 import { BlockchainLag } from '../models/blockchain.model';
 import { BlockEvent, TransactionEvent, StateComparison, EventStats, EventSummary, LatestEvents } from '../models/events.model';
-import { WalletListResponse, WalletSelectResponse, WalletStatus, TransactionDetail } from '../models/wallet.model';
+import { WalletListResponse, WalletSelectResponse, WalletStatus, TransactionDetail, TransactionCreateRequest, TransactionCreateResponse, TransactionSignRequest, TransactionSignResponse, TransactionBroadcastRequest, TransactionBroadcastResponse, UTXOListResponse, FeeEstimateResponse, SentTransaction, UTXO } from '../models/wallet.model';
 
 @Injectable({
   providedIn: 'root'
@@ -103,5 +103,52 @@ export class BitcoinApiService {
    */
   getTransactionDetail(txid: string): Observable<TransactionDetail> {
     return this.http.get<TransactionDetail>(`${this.apiUrl}/tx/${txid}`);
+  }
+
+  /**
+   * Get available UTXOs for selected wallet.
+   */
+  getUTXOs(): Observable<UTXOListResponse> {
+    return this.http.get<UTXOListResponse>(`${this.apiUrl}/tx/utxos`);
+  }
+
+  /**
+   * Estimate transaction fee.
+   * @param targetBlocks Target number of blocks (1-1008)
+   */
+  estimateFee(targetBlocks: number = 2): Observable<FeeEstimateResponse> {
+    const params = new HttpParams().set('target_blocks', targetBlocks.toString());
+    return this.http.get<FeeEstimateResponse>(`${this.apiUrl}/tx/estimate-fee`, { params });
+  }
+
+  /**
+   * Create unsigned transaction.
+   * @param request Transaction creation parameters
+   */
+  createTransaction(request: TransactionCreateRequest): Observable<TransactionCreateResponse> {
+    return this.http.post<TransactionCreateResponse>(`${this.apiUrl}/tx/create`, request);
+  }
+
+  /**
+   * Sign unsigned transaction.
+   * @param request Unsigned transaction hex
+   */
+  signTransaction(request: TransactionSignRequest): Observable<TransactionSignResponse> {
+    return this.http.post<TransactionSignResponse>(`${this.apiUrl}/tx/sign`, request);
+  }
+
+  /**
+   * Broadcast signed transaction.
+   * @param request Signed transaction hex
+   */
+  broadcastTransaction(request: TransactionBroadcastRequest): Observable<TransactionBroadcastResponse> {
+    return this.http.post<TransactionBroadcastResponse>(`${this.apiUrl}/tx/broadcast`, request);
+  }
+
+  /**
+   * Get history of sent transactions.
+   */
+  getSentTransactionHistory(): Observable<{ transactions: SentTransaction[] }> {
+    return this.http.get<{ transactions: SentTransaction[] }>(`${this.apiUrl}/tx/sent-history`);
   }
 }
