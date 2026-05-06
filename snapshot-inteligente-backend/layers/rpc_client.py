@@ -132,6 +132,34 @@ class RPCClient:
                 return {"name": wallet_name, "warning": "already loaded"}
             raise
     
+    def estimate_smart_fee(self, target_blocks: int = 2) -> dict:
+        """
+        Estimate smart fee using Bitcoin Core.
+        
+        Args:
+            target_blocks: Target number of blocks (1-1008)
+            
+        Returns:
+            Dict with fee_rate (BTC/kB) and warnings
+        """
+        return self.call('estimatesmartfee', [target_blocks])
+    
+    def estimate_fee_sat_vB(self, target_blocks: int = 2) -> float:
+        """
+        Estimate fee in sat/vB using Bitcoin Core.
+        
+        Args:
+            target_blocks: Target number of blocks
+            
+        Returns:
+            Fee rate in sat/vB (satoshis per virtual byte)
+        """
+        estimate = self.estimate_smart_fee(target_blocks)
+        fee_btc_per_kb = estimate.get('feerate', 0.0001)
+        # Convert BTC/kB to sat/vB: (BTC * 1e8 sat/BTC) / (1000 bytes)
+        fee_sat_vB = (fee_btc_per_kb * 100_000_000) / 1000
+        return fee_sat_vB
+    
     def close(self):
         """Close the RPC session."""
         self._session.close()
