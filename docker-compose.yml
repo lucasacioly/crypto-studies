@@ -1,42 +1,20 @@
-version: '3.9'
-
 services:
-  bitcoin:
-    image: bitcoin:latest
-    container_name: bitcoin-regtest
-    ports:
-      - "8332:8332"
-      - "18333:18333"
-    environment:
-      BITCOIN_NETWORK: regtest
-    volumes:
-      - bitcoin_data:/bitcoin/.bitcoin
-
   backend:
     build: ./snapshot-inteligente-backend
     container_name: snapshot-backend
-    ports:
-      - "8000:8000"
+    network_mode: host
     environment:
-      BITCOIN_RPC_HOST: bitcoin
-      BITCOIN_RPC_PORT: 8332
-      BITCOIN_RPC_USER: bitcoin
-      BITCOIN_RPC_PASSWORD: changeme
-      CACHE_TTL_SECONDS: 10
-    depends_on:
-      - bitcoin
-    volumes:
-      - ./snapshot-inteligente-backend:/app
+      BITCOIN_RPC_HOST: 172.17.0.1
+      BITCOIN_RPC_PORT: 18443
+      BITCOIN_RPC_USER: teste
+      BITCOIN_RPC_PASSWORD: teste
+      ZMQ_HOST: 172.17.0.1
+      ZMQ_PORT: 28332
 
   frontend:
-    build: ./snapshot-inteligente-frontend
+    image: bitcoincoders-frontend:latest
     container_name: snapshot-frontend
     ports:
       - "4200:80"
-    environment:
-      API_URL: http://localhost:8000/api
     depends_on:
       - backend
-
-volumes:
-  bitcoin_data:
