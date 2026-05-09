@@ -64,5 +64,6 @@ dist/
 # Diretórios e arquivos grandes/locais
 webclient/
 bitcoin-31.0-x86_64-linux-gnu.tar.gz
+btc-regtest-n1/
 hackathon-corecraft-descrição-turma-B.pdf
 brainstorming-blockvigil.md
