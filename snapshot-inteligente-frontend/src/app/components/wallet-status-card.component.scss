@@ -63,6 +63,25 @@
   font-size: 0.95rem;
 }
 
+.no-wallet {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  
+  span {
+    display: block;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.5rem;
+  }
+  
+  small {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+  }
+}
+
 .error {
   color: #fca5a5;
   background: rgba(239, 68, 68, 0.15);

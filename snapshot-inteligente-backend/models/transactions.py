@@ -203,11 +203,17 @@ class TransactionSignResponse(BaseModel):
 class TransactionBroadcastRequest(BaseModel):
     """Request to broadcast signed transaction."""
     tx_hex: str = Field(..., description="Signed transaction hex")
+    recipient: str = Field(..., description="Recipient Bitcoin address")
+    amount_btc: float = Field(..., gt=0, description="Amount sent in BTC")
+    fee_sat: int = Field(..., ge=0, description="Fee paid in satoshis")
     
     class Config:
         json_schema_extra = {
             "example": {
-                "tx_hex": "02000000010123..."
+                "tx_hex": "02000000010123...",
+                "recipient": "bcrt1...",
+                "amount_btc": 0.001,
+                "fee_sat": 125
             }
         }
 

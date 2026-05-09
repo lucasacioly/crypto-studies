@@ -207,7 +207,12 @@ export class SendTransactionComponent implements OnInit, OnDestroy {
     this.step = 'broadcasting';
 
     this.bitcoinApi
-      .broadcastTransaction({ tx_hex: signedTxHex })
+      .broadcastTransaction({
+        tx_hex: signedTxHex,
+        recipient: this.recipient,
+        amount_btc: this.amountBTC,
+        fee_sat: this.transactionPreview?.estimated_fee_sat || 0
+      })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {

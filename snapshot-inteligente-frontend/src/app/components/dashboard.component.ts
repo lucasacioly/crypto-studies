@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { BitcoinApiService } from '../services/bitcoin-api.service';
+import { forkJoin } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { DataPollingService } from '../services/data-polling.service';
 import { MempoolSummary } from '../models/mempool.model';
 import { BlockchainLag } from '../models/blockchain.model';
-import { Subject, interval, takeUntil, switchMap } from 'rxjs';
-import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,64 +21,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private bitcoinApi: BitcoinApiService) {}
+  constructor(private dataPolling: DataPollingService) {}
 
   ngOnInit(): void {
-    this.loadData();
-    this.startAutoRefresh();
+    this.dataPolling.mempool$.pipe(takeUntil(this.destroy$)).subscribe(m => this.mempool = m);
+    this.dataPolling.blockchainLag$.pipe(takeUntil(this.destroy$)).subscribe(b => {
+      this.blockchain = b;
+      this.loading = false;
+    });
+    this.dataPolling.health$.pipe(takeUntil(this.destroy$)).subscribe(c => {
+      this.isConnected = c;
+      if (c) {
+        this.error = null;
+      } else {
+        this.error = 'Unable to connect to Bitcoin backend';
+      }
+    });
+    this.lastUpdated = new Date();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  loadData(): void {
-    this.loading = true;
-    this.error = null;
-
-    this.bitcoinApi.getHealth().pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.isConnected = true;
-        this.fetchMempoolAndBlockchain();
-      },
-      error: (err) => {
-        this.isConnected = false;
-        this.error = 'Unable to connect to Bitcoin backend';
-        this.loading = false;
-      }
-    });
-  }
-
-  private fetchMempoolAndBlockchain(): void {
-    forkJoin([
-      this.bitcoinApi.getMempoolSummary(),
-      this.bitcoinApi.getBlockchainLag()
-    ]).pipe(takeUntil(this.destroy$)).subscribe({
-      next: ([mempoolData, blockchainData]) => {
-        this.mempool = mempoolData;
-        this.blockchain = blockchainData;
-        this.lastUpdated = new Date();
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Error fetching data:', err);
-        this.error = 'Failed to fetch blockchain data';
-        this.loading = false;
-      }
-    });
-  }
-
-  private startAutoRefresh(): void {
-    interval(15000)
-      .pipe(
-        switchMap(() => {
-          this.loadData();
-          return [];
-        }),
-        takeUntil(this.destroy$)
-      )
-      .subscribe();
   }
 
   getRelativeTime(date: Date | null): string {
@@ -89,12 +54,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `${Math.floor(minutes / 60)} hour${Math.floor(minutes / 60) > 1 ? 's' : ''} ago`;
   }
 
-  /**
-   * Handle wallet selection event from wallet selector component (Task 3)
-   */
   onWalletSelected(wallet: string): void {
     console.log(`Wallet selected: ${wallet}`);
-    // The wallet is already selected in the backend
-    // Child components will use the selected wallet for operations
+    this.dataPolling.refreshWalletStatus();
   }
 }

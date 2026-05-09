@@ -82,6 +82,9 @@ export interface TransactionSignResponse {
 
 export interface TransactionBroadcastRequest {
   tx_hex: string;
+  recipient: string;
+  amount_btc: number;
+  fee_sat: number;
 }
 
 export interface TransactionBroadcastResponse {

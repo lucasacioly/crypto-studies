@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { BitcoinApiService } from '../../services/bitcoin-api.service';
 import { LatestEvents } from '../../models/events.model';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { DataPollingService } from '../../services/data-polling.service';
 
 @Component({
   selector: 'app-latest-events-card',
@@ -13,38 +13,20 @@ export class LatestEventsCardComponent implements OnInit, OnDestroy {
   latestEvents: LatestEvents | null = null;
   isLoading = false;
   error: string | null = null;
-  refreshInterval = 15000;
   private destroy$ = new Subject<void>();
 
-  constructor(private bitcoinApi: BitcoinApiService) {}
+  constructor(private dataPolling: DataPollingService) {}
 
   ngOnInit(): void {
-    this.loadLatestEvents();
-    setInterval(() => this.loadLatestEvents(), this.refreshInterval);
+    this.dataPolling.latestEvents$.pipe(takeUntil(this.destroy$)).subscribe(events => {
+      this.latestEvents = events;
+      this.isLoading = false;
+    });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private loadLatestEvents(): void {
-    this.isLoading = true;
-    this.error = null;
-
-    this.bitcoinApi.getLatestEvents(10)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (events: LatestEvents) => {
-          this.latestEvents = events;
-          this.isLoading = false;
-        },
-        error: (error: any) => {
-          console.error('Error fetching latest events:', error);
-          this.error = 'Failed to fetch latest events';
-          this.isLoading = false;
-        }
-      });
   }
 
   formatTimestamp(ts: number): string {
@@ -60,7 +42,5 @@ export class LatestEventsCardComponent implements OnInit, OnDestroy {
     return hash.substring(0, length) + '...';
   }
 
-  refresh(): void {
-    this.loadLatestEvents();
-  }
+  refresh(): void {}
 }

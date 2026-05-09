@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { BitcoinApiService } from '../services/bitcoin-api.service';
 import { SentTransaction } from '../models/wallet.model';
-import { Subject, interval } from 'rxjs';
-import { takeUntil, switchMap } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { DataPollingService } from '../services/data-polling.service';
 
 @Component({
   selector: 'app-transaction-history',
@@ -17,20 +17,15 @@ export class TransactionHistoryComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private bitcoinApi: BitcoinApiService) {}
+  constructor(private dataPolling: DataPollingService) {}
 
   ngOnInit(): void {
-    this.loadHistory();
-    // Auto-refresh every 30 seconds
-    interval(30000)
-      .pipe(
-        switchMap(() => {
-          this.loadHistory();
-          return [];
-        }),
-        takeUntil(this.destroy$)
-      )
-      .subscribe();
+    this.dataPolling.sentTransactions$.pipe(takeUntil(this.destroy$)).subscribe(txs => {
+      this.transactions = [...txs].sort((a, b) =>
+        new Date(b.broadcast_at).getTime() - new Date(a.broadcast_at).getTime()
+      );
+      this.isLoading = false;
+    });
   }
 
   ngOnDestroy(): void {
@@ -38,66 +33,31 @@ export class TransactionHistoryComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadHistory(): void {
-    this.isLoading = true;
-    this.error = null;
-
-    this.bitcoinApi
-      .getSentTransactionHistory()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.transactions = response.transactions.sort((a, b) => 
-            new Date(b.broadcast_at).getTime() - new Date(a.broadcast_at).getTime()
-          );
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading history:', error);
-          this.error = error.error?.detail || 'Failed to load transaction history';
-          this.isLoading = false;
-        }
-      });
-  }
-
   getStatusColor(status: string): string {
     switch (status) {
-      case 'broadcast':
-        return 'warning';
-      case 'confirmed':
-        return 'success';
-      case 'failed':
-        return 'error';
-      default:
-        return 'info';
+      case 'broadcast': return 'warning';
+      case 'confirmed': return 'success';
+      case 'failed': return 'error';
+      default: return 'info';
     }
   }
 
   getStatusIcon(status: string): string {
     switch (status) {
-      case 'broadcast':
-        return '⏳';
-      case 'confirmed':
-        return '✅';
-      case 'failed':
-        return '❌';
-      default:
-        return '❓';
+      case 'broadcast': return '⏳';
+      case 'confirmed': return '✅';
+      case 'failed': return '❌';
+      default: return '?';
     }
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleString();
+    return new Date(dateString).toLocaleString();
   }
 
   copyToClipboard(text: string): void {
-    navigator.clipboard.writeText(text).then(() => {
-      console.log('Copied to clipboard');
-    });
+    navigator.clipboard.writeText(text);
   }
 
-  refresh(): void {
-    this.loadHistory();
-  }
+  refresh(): void {}
 }

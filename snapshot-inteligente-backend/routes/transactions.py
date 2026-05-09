@@ -58,83 +58,6 @@ def save_sent_transactions(data: dict):
         json.dump(data, f, indent=2)
 
 
-@router.get("/{txid}", response_model=TransactionDetail)
-async def get_transaction_detail(
-    txid: str,
-    rpc_client: RPCClient = Depends(get_rpc_client)
-):
-    """
-    Get detailed transaction information with interpretation.
-    
-    Args:
-        txid: Transaction ID
-        
-    Returns:
-        TransactionDetail with status, confirmations, and interpretation
-        
-    Raises:
-        400: No wallet selected
-        404: Transaction not found
-        503: RPC connection failed
-    """
-    try:
-        logger.info(f"GET /tx/{txid}")
-        
-        selected_wallet = rpc_client.get_selected_wallet()
-        if not selected_wallet:
-            raise HTTPException(
-                status_code=400,
-                detail="No wallet selected. Use POST /wallet/select first."
-            )
-        
-        # Get transaction from wallet
-        try:
-            tx_data = rpc_client.call("gettransaction", [txid])
-        except RPCMethodError as e:
-            if "not found" in str(e).lower():
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Transaction {txid} not found in wallet {selected_wallet}"
-                )
-            raise
-        
-        # Get current time
-        current_time = time.time()
-        
-        # Get interpretation
-        interpretation = TransactionInterpreter.get_interpretation(tx_data, current_time)
-        
-        # Extract relevant data
-        confirmations = tx_data.get("confirmations", 0)
-        confirmed = confirmations > 0
-        block_hash = tx_data.get("blockhash")
-        age_seconds = TransactionInterpreter.get_transaction_age(tx_data, current_time)
-        
-        logger.info(f"Transaction {txid}: {interpretation.status}, confirmations={confirmations}")
-        
-        return TransactionDetail(
-            txid=txid,
-            wallet=selected_wallet,
-            status=interpretation.status,
-            confirmed=confirmed,
-            confirmations=confirmations,
-            block_hash=block_hash,
-            age_seconds=age_seconds,
-            message=interpretation.message,
-            warning=interpretation.warning
-        )
-    except HTTPException:
-        raise
-    except (RPCConnectionError, RPCMethodError) as e:
-        logger.error(f"Error getting transaction: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail="Cannot connect to Bitcoin RPC"
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error getting transaction: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @router.get("/estimate-fee", response_model=FeeEstimateResponse)
 async def estimate_fee(
@@ -379,16 +302,16 @@ async def broadcast_transaction(
         # Broadcast transaction
         txid = TransactionSigner.broadcast_transaction(rpc_client, request.tx_hex)
         
-        # Record sent transaction
+        # Record sent transaction with metadata
         sent_data = load_sent_transactions()
         broadcast_time = datetime.utcnow().isoformat() + "Z"
         
         sent_tx = {
             "txid": txid,
             "wallet": selected_wallet,
-            "recipient": "unknown",
-            "amount_btc": 0,
-            "fee_sat": 0,
+            "recipient": request.recipient,
+            "amount_btc": request.amount_btc,
+            "fee_sat": request.fee_sat,
             "status": "broadcast",
             "created_at": broadcast_time,
             "broadcast_at": broadcast_time,
@@ -437,3 +360,82 @@ async def get_sent_history():
     except Exception as e:
         logger.error(f"Error loading sent history: {e}")
         raise HTTPException(status_code=500, detail="Error loading transaction history")
+
+
+@router.get("/{txid}", response_model=TransactionDetail)
+async def get_transaction_detail(
+    txid: str,
+    rpc_client: RPCClient = Depends(get_rpc_client)
+):
+    """
+    Get detailed transaction information with interpretation.
+    
+    Args:
+        txid: Transaction ID
+        
+    Returns:
+        TransactionDetail with status, confirmations, and interpretation
+        
+    Raises:
+        400: No wallet selected
+        404: Transaction not found
+        503: RPC connection failed
+    """
+    try:
+        logger.info(f"GET /tx/{txid}")
+        
+        selected_wallet = rpc_client.get_selected_wallet()
+        if not selected_wallet:
+            raise HTTPException(
+                status_code=400,
+                detail="No wallet selected. Use POST /wallet/select first."
+            )
+        
+        # Get transaction from wallet
+        try:
+            tx_data = rpc_client.call("gettransaction", [txid])
+        except RPCMethodError as e:
+            if "not found" in str(e).lower():
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Transaction {txid} not found in wallet {selected_wallet}"
+                )
+            raise
+        
+        # Get current time
+        current_time = time.time()
+        
+        # Get interpretation
+        interpretation = TransactionInterpreter.get_interpretation(tx_data, current_time)
+        
+        # Extract relevant data
+        confirmations = tx_data.get("confirmations", 0)
+        confirmed = confirmations > 0
+        block_hash = tx_data.get("blockhash")
+        age_seconds = TransactionInterpreter.get_transaction_age(tx_data, current_time)
+        
+        logger.info(f"Transaction {txid}: {interpretation.status}, confirmations={confirmations}")
+        
+        return TransactionDetail(
+            txid=txid,
+            wallet=selected_wallet,
+            status=interpretation.status,
+            confirmed=confirmed,
+            confirmations=confirmations,
+            block_hash=block_hash,
+            age_seconds=age_seconds,
+            message=interpretation.message,
+            warning=interpretation.warning
+        )
+    except HTTPException:
+        raise
+    except (RPCConnectionError, RPCMethodError) as e:
+        logger.error(f"Error getting transaction: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Cannot connect to Bitcoin RPC"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error getting transaction: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+

@@ -15,7 +15,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/events", tags=["events"])
+router = APIRouter(prefix="/events", tags=["events"])
 
 
 # Response models

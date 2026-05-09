@@ -1,5 +1,4 @@
 <div class="min-h-screen bg-gray-50 p-6">
-  <!-- Header -->
   <div class="max-w-7xl mx-auto mb-8">
     <div class="flex justify-between items-center mb-2">
       <h1 class="text-4xl font-bold text-gray-900">Bitcoin Node Status</h1>
@@ -10,9 +9,6 @@
             {{ isConnected ? 'Connected' : 'Disconnected' }}
           </span>
         </div>
-        <button (click)="loadData()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-          Refresh
-        </button>
       </div>
     </div>
     <p class="text-gray-600">
@@ -20,12 +16,10 @@
     </p>
   </div>
 
-  <!-- Error Message -->
   <div *ngIf="error" class="max-w-7xl mx-auto mb-8 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
     {{ error }}
   </div>
 
-  <!-- Loading State -->
   <div *ngIf="loading" class="max-w-7xl mx-auto">
     <div class="text-center py-12">
       <div class="inline-block">
@@ -35,34 +29,19 @@
     </div>
   </div>
 
-      <!-- Cards Grid -->
-      <div *ngIf="!loading" class="max-w-7xl mx-auto space-y-6">
-        <!-- Task 3: Wallet Selector and Status -->
-        <app-wallet-selector (walletSelected)="onWalletSelected($event)"></app-wallet-selector>
-        
-        <app-wallet-status-card></app-wallet-status-card>
+  <div *ngIf="!loading" class="max-w-7xl mx-auto space-y-6">
+    <app-wallet-selector (walletSelected)="onWalletSelected($event)"></app-wallet-selector>
+    <app-wallet-status-card></app-wallet-status-card>
+    <app-send-transaction></app-send-transaction>
+    <app-transaction-history></app-transaction-history>
 
-        <!-- Send Transaction Card -->
-        <app-send-transaction></app-send-transaction>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <app-mempool-card [data]="mempool"></app-mempool-card>
+      <app-blockchain-card [data]="blockchain"></app-blockchain-card>
+      <app-blockchain-reorg-detector></app-blockchain-reorg-detector>
+    </div>
 
-        <!-- Transaction History Card -->
-        <app-transaction-history></app-transaction-history>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Mempool Card -->
-          <app-mempool-card [data]="mempool"></app-mempool-card>
-          
-          <!-- Blockchain Card -->
-          <app-blockchain-card [data]="blockchain"></app-blockchain-card>
-
-          <!-- Blockchain Reorg Detector (Task 2) -->
-          <app-blockchain-reorg-detector></app-blockchain-reorg-detector>
-        </div>
-
-        <!-- Latest Events Card (Task 2) -->
-        <app-latest-events-card></app-latest-events-card>
-
-        <!-- Event Activity Card (Task 2) -->
-        <app-event-activity-card></app-event-activity-card>
-      </div>
+    <app-latest-events-card></app-latest-events-card>
+    <app-event-activity-card></app-event-activity-card>
+  </div>
 </div>

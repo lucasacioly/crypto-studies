@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/blockchain", tags=["blockchain"])
+router = APIRouter(prefix="/blockchain", tags=["blockchain"])
 
 @router.get("/lag", response_model=BlockchainLag)
 async def get_blockchain_lag(

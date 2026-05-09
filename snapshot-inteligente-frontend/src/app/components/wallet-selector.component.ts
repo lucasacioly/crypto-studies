@@ -43,8 +43,8 @@ export class WalletSelectorComponent implements OnInit, OnDestroy {
           this.availableWallets = response.available_wallets;
           this.selectedWallet = response.selected_wallet;
 
-          // Auto-select if only one wallet exists
-          if (this.availableWallets.length === 1 && !this.selectedWallet) {
+          // Auto-select first wallet if none selected
+          if (this.availableWallets.length > 0 && !this.selectedWallet) {
             this.selectWallet(this.availableWallets[0]);
           }
 
@@ -58,8 +58,19 @@ export class WalletSelectorComponent implements OnInit, OnDestroy {
       });
   }
 
-  selectWallet(wallet: string): void {
-    if (wallet === this.selectedWallet) return;
+  selectWallet(walletOrEvent: string | Event): void {
+    // Handle both string (from programmatic calls) and Event (from change event)
+    let wallet: string;
+    
+    if (typeof walletOrEvent === 'string') {
+      wallet = walletOrEvent;
+    } else {
+      // Extract wallet name from select element
+      const target = walletOrEvent.target as HTMLSelectElement;
+      wallet = target.value;
+    }
+    
+    if (!wallet || wallet === this.selectedWallet) return;
 
     this.isLoading = true;
     this.error = null;

@@ -3,7 +3,7 @@ Wallet management endpoints for Tarefa 3 (Task 3).
 Handles wallet selection, listing, and status.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from typing import List, Optional
 import logging
 from models.transactions import (
@@ -14,10 +14,16 @@ from models.transactions import (
 )
 from layers.rpc_client import RPCClient
 from models.errors import RPCConnectionError, RPCMethodError
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/wallet", tags=["wallet"])
+
+
+class WalletSelectRequest(BaseModel):
+    """Request body for wallet selection."""
+    wallet: str
 
 
 def get_rpc_client() -> RPCClient:
@@ -70,14 +76,14 @@ async def list_wallets(rpc_client: RPCClient = Depends(get_rpc_client)):
 
 @router.post("/select", response_model=WalletSelectResponse)
 async def select_wallet(
-    wallet: str,
+    request: WalletSelectRequest,
     rpc_client: RPCClient = Depends(get_rpc_client)
 ):
     """
     Select a wallet for subsequent operations.
     
     Args:
-        wallet: Wallet name to select
+        request: Request body with wallet name
         
     Returns:
         WalletSelectResponse with selected wallet info
@@ -87,6 +93,7 @@ async def select_wallet(
         503: RPC connection failed
     """
     try:
+        wallet = request.wallet
         logger.info(f"POST /wallet/select - wallet: {wallet}")
         
         # Get list of available wallets
